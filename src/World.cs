@@ -132,6 +132,15 @@ public sealed class World
         return _archetypes.HasComponent(type, entity.Identity);
     }
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool HasComponent<T>(Entity entity, Type target) where T : struct
+    {
+        var target_entity = GetTypeEntity(target);
+
+        var type = StorageType.Create<T>(target_entity.Identity);
+        return _archetypes.HasComponent(type, entity.Identity);
+    }
+	
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddComponent<T>(Entity entity, Entity target) where T : struct
     {
