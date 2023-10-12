@@ -72,7 +72,7 @@ public sealed class Archetypes
         meta.Row = 0;
         meta.Identity = Identity.None;
 
-        UnusedIds.Enqueue(identity);
+        UnusedIds.Enqueue(new Identity(identity.Id, (ushort)(identity.Generation + 1)));
 
         if (!_typesByRelationTarget.TryGetValue(identity, out var list))
         {
@@ -283,7 +283,7 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool IsAlive(Identity identity)
     {
-        return Meta[identity.Id].Identity != Identity.None;
+        return identity != Identity.None && Meta[identity.Id].Identity == identity;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
