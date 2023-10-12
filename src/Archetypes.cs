@@ -72,7 +72,7 @@ public sealed class Archetypes
         meta.Row = 0;
         meta.Identity = Identity.None;
 
-        UnusedIds.Enqueue(identity);
+        UnusedIds.Enqueue(new Identity(identity.Id, (ushort)(identity.Generation + 1)));
 
         if (!_typesByRelationTarget.TryGetValue(identity, out var list))
         {
@@ -96,6 +96,10 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AddComponent(StorageType type, Identity identity, object data)
     {
+        if (!IsAlive(identity))
+        {
+            throw new Exception($"cannot add component {type.Type.Name} to despawned entity {identity}");
+        }
         ref var meta = ref Meta[identity.Id];
         var oldTable = Tables[meta.TableId];
 
@@ -139,6 +143,10 @@ public sealed class Archetypes
     {
         var type = StorageType.Create<T>(target);
         var meta = Meta[identity.Id];
+        if (meta.Identity != identity)
+        {
+            throw new Exception($"cannot get component on despawned entity {identity}");
+        }
         var table = Tables[meta.TableId];
         var storage = (T[])table.GetStorage(type);
         return ref storage[meta.Row];
@@ -147,13 +155,21 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool HasComponent(StorageType type, Identity identity)
     {
+        if (identity == Identity.None)
+        {
+            return false;
+        }
         var meta = Meta[identity.Id];
-        return meta.Identity != Identity.None && Tables[meta.TableId].Types.Contains(type);
+        return meta.Identity == identity && Tables[meta.TableId].Types.Contains(type);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void RemoveComponent(StorageType type, Identity identity)
     {
+        if (!IsAlive(identity))
+        {
+            throw new Exception($"cannot remove component {type.Type.Name} from despawned entity {identity}");
+        }
         ref var meta = ref Meta[identity.Id];
         var oldTable = Tables[meta.TableId];
 
@@ -283,13 +299,18 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal bool IsAlive(Identity identity)
     {
-        return Meta[identity.Id].Identity != Identity.None;
+        return identity != Identity.None && Meta[identity.Id].Identity == identity;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal ref EntityMeta GetEntityMeta(Identity identity)
     {
-        return ref Meta[identity.Id];
+        ref var meta = ref Meta[identity.Id];
+        if (meta.Identity != identity)
+        {
+            throw new Exception($"cannot get entity meta on despawned entity {identity}");
+        }
+        return ref meta;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -302,6 +323,10 @@ public sealed class Archetypes
     internal Entity GetTarget(StorageType type, Identity identity)
     {
         var meta = Meta[identity.Id];
+        if (meta.Identity != identity)
+        {
+            return Entity.None;
+        }
         var table = Tables[meta.TableId];
 
         foreach (var storageType in table.Types)
@@ -316,15 +341,17 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal Entity[] GetTargets(StorageType type, Identity identity)
     {
-        var meta = Meta[identity.Id];
-        var table = Tables[meta.TableId];
-
         var list = ListPool<Entity>.Get();
 
-        foreach (var storageType in table.Types)
+        if (IsAlive(identity))
         {
-            if (!storageType.IsRelation || storageType.TypeId != type.TypeId) continue;
-            list.Add(new Entity(storageType.Identity));
+            var meta = Meta[identity.Id];
+            var table = Tables[meta.TableId];
+            foreach (var storageType in table.Types)
+            {
+                if (!storageType.IsRelation || storageType.TypeId != type.TypeId) continue;
+                list.Add(new Entity(storageType.Identity));
+            }
         }
 
         var targetEntities = list.ToArray();
@@ -336,15 +363,17 @@ public sealed class Archetypes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal (StorageType, object)[] GetComponents(Identity identity)
     {
-        var meta = Meta[identity.Id];
-        var table = Tables[meta.TableId];
-
         var list = ListPool<(StorageType, object)>.Get();
 
-        foreach (var type in table.Types)
+        if (IsAlive(identity))
         {
-            var storage = table.GetStorage(type);
-            list.Add((type, storage.GetValue(meta.Row)!));
+            var meta = Meta[identity.Id];
+            var table = Tables[meta.TableId];
+            foreach (var type in table.Types)
+            {
+                var storage = table.GetStorage(type);
+                list.Add((type, storage.GetValue(meta.Row)!));
+            }
         }
 
         var array = list.ToArray();
