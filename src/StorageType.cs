@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace HypEcs;
 
-public struct StorageType : IComparable<StorageType>
+public struct StorageType : IComparable<StorageType>, IEquatable<StorageType>
 {
     public Type Type { get; private set; }
     public ulong Value { get; private set; }
