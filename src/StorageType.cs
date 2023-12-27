@@ -4,11 +4,11 @@ using System.Runtime.CompilerServices;
 
 namespace HypEcs;
 
-public struct StorageType : IComparable<StorageType>
+public readonly struct StorageType : IComparable<StorageType>
 {
-    public Type Type { get; private set; }
-    public ulong Value { get; private set; }
-    public bool IsRelation { get; private set; }
+    public readonly Type Type;
+    public readonly ulong Value;
+    public readonly bool IsRelation;
 
     public ushort TypeId
     {
@@ -22,15 +22,24 @@ public struct StorageType : IComparable<StorageType>
         get => TypeIdConverter.Identity(Value);
     }
 
+    public StorageType (
+        Type type,
+        ulong value,
+        bool isRelation
+    ) {
+        Type = type;
+        Value = value;
+        IsRelation = isRelation;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static StorageType Create<T>(Identity identity = default)
     {
-        return new StorageType()
-        {
-            Value = TypeIdConverter.Value<T>(identity),
-            Type = typeof(T),
-            IsRelation = identity.Id > 0,
-        };
+        return new StorageType(
+            value: TypeIdConverter.Value<T>(identity),
+            type: typeof(T),
+            isRelation: identity.Id > 0
+        );
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
