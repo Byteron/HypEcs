@@ -181,8 +181,6 @@ public sealed class Archetypes
 
             var newEdge = newTable.GetTableEdge(type);
             newEdge.Add = oldTable;
-
-            Tables.Add(newTable);
         }
 
         var newRow = Table.MoveEntry(identity, meta.Row, oldTable, newTable);
