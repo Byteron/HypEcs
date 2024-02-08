@@ -65,6 +65,12 @@ This library is a tiny, tiny ECS with a focus on good performance and great simp
 
 <summary>🥇🥈🥉 (click to expand) ECS Comparison Matrix<br/><b></b></summary>
 
+> [!IMPORTANT]
+> The idea of _fenn**ecs**_ was to fill the gaps that the author felt working with various established Entity Component Systems. This is why this matrix is clearly imbalanced, it's a shopping list of things that _fenn**ecs**_ does well and was made to do
+well; and things it may aspire to do but compromised on in order to be able to achieve the others.
+>
+> <em>(TLDR; Foxes are soft, choices are hard - Unity dumb, .NET 8 really sharp.)</em>
+
 Here are some of the key properties where _fenn**ecs**_ might be a better or worse choice than its peers. Our resident fennecs have worked with all of these ECSs, and we're happy to answer any questions you might have.
 
 |                                                                             |           _fenn**ecs**_            | HypEcs | Entitas |           Unity DOTS            |            DefaultECS            |
