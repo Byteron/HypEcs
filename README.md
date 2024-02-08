@@ -61,6 +61,13 @@ So how does _fenn**ecs**_ compare to other ECSs?
 
 This library is a tiny, tiny ECS with a focus on good performance and great simplicity. But it *cares enough* to provide a few things you might not expect.
 
+> [!IMPORTANT]
+> The idea of _fenn**ecs**_ was to fill the gaps that the author felt working with various established Entity Component Systems. This is why this matrix is clearly imbalanced, it's a shopping list of things that _fenn**ecs**_ does well and was made to do
+well; and things it may aspire to do but compromised on in order to be able to achieve the others.
+>
+> <em>(TLDR; Foxes are soft, choices are hard - Unity dumb, .NET 8 really sharp.)</em>
+
+
 <details>
 
 <summary>🥇🥈🥉 (click to expand) ECS Comparison Matrix<br/><b></b></summary>
@@ -88,12 +95,6 @@ This library is a tiny, tiny ECS with a focus on good performance and great simp
 | Singleton / Unique Components                                               | 🟨<br/><sup>(ref types only)</sup> |   ❌    |    ✅    | 🟨<br/><sup>(per system)</sup>  |                ✅                 |
 
 </details>
-
-> [!IMPORTANT]
-> The idea of _fenn**ecs**_ was to fill the gaps that the author felt working with various established Entity Component Systems. This is why this matrix is clearly imbalanced, it's a shopping list of things that _fenn**ecs**_ does well and was made to do
-well; and things it may aspire to do but compromised on in order to be able to achieve the others.
->
-> <em>(TLDR; Foxes are soft, choices are hard - Unity dumb, .NET 8 really sharp.)</em>
 
 ## Highlights / Design Goals
 
