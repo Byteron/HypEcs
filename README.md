@@ -7,7 +7,7 @@
         <td>
             <h1>What the fox!? Another ECS?</h1>
             <p>We know... oh, <em>we know.</em> 😩️</p>  
-            <h3>But in a nutshell, <a href="https://github.com/thygrrr/fennecs"><span style="font-size: larger">fenn<b>ecs</b></span></a> is...</h3>
+            <h3>But in a nutshell, <a href="https://github.com/thygrrr/fennecs"><span style="font-size: larger"><em>fenn<b>ecs</b></em></span></a> is...</h3>
             <ul style="list-style-type: '🐾 ';">
                 <li>zero codegen</li>
                 <li>minimal boilerplate</li>
@@ -51,21 +51,19 @@ query.RunParallel((ref Position position, float dt) => {
 ```
 
 
-> #### 💢... when we said minimal boilerplate, <em>we foxing meant it.</em>
-> Even using the strictest judgment, that's no more than 2 lines of boilerplate! Merely instantiating the world and building the query aren't directly moving parts of the actor/gravity feature we just built, and should be seen as "enablers" or "infrastructure".  
-> 
-> The 💫*real magic*💫 is that none of this brevity compromises on performance.
+#### 💢... when we said minimal boilerplate, <em>we foxing meant it.</em>
+Even using the strictest judgment, that's no more than 2 lines of boilerplate! Merely instantiating the world and building the query aren't directly moving parts of the actor/gravity feature we just built, and should be seen as "enablers" or "infrastructure".  
 
-## 📦 Features: What's in the box?
+The 💫*real magic*💫 is that none of this brevity compromises on performance.
 
-_fenn**ecs**_ is a tiny, tiny ECS with a focus on performance and simplicity. And it cares enough to provide a few things you might not expect. Our competition sure didn't.
+### 🥊 Punching above our weight: How does _fenn**ecs**_ compare to other ECSs?
 
-## 🥊 Punching above our weight: Comparison Matrix
-
-<!--<img src="Documentation/Logos/fennecs-group.png" width="768px" alt="Multiple colorful anthro fennecs in pixel art" />-->
+> [!TIP]
+> In short, we don't. _fenn**ecs**_ is a tiny, tiny ECS with a focus on good performance and great simplicity. 
+> But it cares enough to provide a few things you might not expect.
 
 <details>
-<summary>🥇🥈🥉ECS Comparison Matrix<br/><b>Foxes are soft, choices are hard</b> - Unity dumb; .NET 8 really sharp.</summary>
+<summary>🥇🥈🥉ECS Comparison Matrix<br/><b>Foxes are soft, choices are hard</b> <em>(TLDR; Unity dumb; .NET 8 really sharp.)</em></summary>
 
 Here are some of the key properties where _fenn**ecs**_ might be a better or worse choice than its peers. Our resident fennecs have worked with all of these ECSs, and we're happy to answer any questions you might have.
 
