@@ -50,24 +50,26 @@ query.RunParallel((ref Position position, float dt) => {
 }, uniform: Time.Delta, chunkSize: 2048);
 ```
 
-
 #### 💢... when we said minimal boilerplate, <em>we foxing meant it.</em>
 Even using the strictest judgment, that's no more than 2 lines of boilerplate! Merely instantiating the world and building the query aren't directly moving parts of the actor/gravity feature we just built, and should be seen as "enablers" or "infrastructure".  
 
 The 💫*real magic*💫 is that none of this brevity compromises on performance.
 
-### 🥊 Punching above our weight: How does _fenn**ecs**_ compare to other ECSs?
+
+## 🥊 Comparisons: Punching above our weight?
+So how does _fenn**ecs**_ compare to other ECSs? 
+
+This library is a tiny, tiny ECS with a focus on good performance and great simplicity. But it *cares enough* to provide a few things you might not expect. 
+
 > [!IMPORTANT]
-> In short, we don't. _fenn**ecs**_ is a tiny, tiny ECS with a focus on good performance and great simplicity. 
-> But it *cares enough* to provide a few things you might not expect.
+> The idea of _fenn**ecs**_ was to fill the gaps that the author felt working with various established Entity Component Systems. This is why this matrix is clearly imbalanced, it's a shopping list of things that _fenn**ecs**_ does well and was made to do well; and things it may aspire to do but compromised on in order to be able to achieve the others.
 
 <details>
 <summary>🥇🥈🥉ECS Comparison Matrix<br/><b>Foxes are soft, choices are hard</b> <em>(TLDR; Unity dumb; .NET 8 really sharp.)</em></summary>
 
 Here are some of the key properties where _fenn**ecs**_ might be a better or worse choice than its peers. Our resident fennecs have worked with all of these ECSs, and we're happy to answer any questions you might have.
 
-
-|                                                                             |              fennECS               | HypEcs | Entitas |           Unity DOTS            |            DefaultECS            |
+|                                                                             |           _fenn**ecs**_            | HypEcs | Entitas |           Unity DOTS            |            DefaultECS            |
 |:----------------------------------------------------------------------------|:----------------------------------:|:------:|:-------:|:-------------------------------:|:--------------------------------:|
 | Boilerplate-to-Feature Ratio                                                |               3-to-1               | 5-to-1 | 12-to-1 |           27-to-1 😱            |              7-to-1              |
 | Entity-Component Queries                                                    |                 ✅                  |   ✅    |    ✅    |                ✅                |                ✅                 |
