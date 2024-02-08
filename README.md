@@ -56,9 +56,8 @@ Even using the strictest judgment, that's no more than 2 lines of boilerplate! M
 
 The 💫*real magic*💫 is that none of this brevity compromises on performance.
 
-### 🥊 Punching above our weight: How does _fenn**ecs**_ compare to other ECSs?
-
 > [!IMPORTANT]
+> ### 🥊 Punching above our weight: How does _fenn**ecs**_ compare to other ECSs?
 > In short, we don't. _fenn**ecs**_ is a tiny, tiny ECS with a focus on good performance and great simplicity. 
 > But it *cares enough* to provide a few things you might not expect.
 
