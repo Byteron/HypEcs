@@ -68,7 +68,7 @@ well; and things it may aspire to do but compromised on in order to be able to a
 <details>
 <summary> 🥇🥈🥉ECS Comparison Matrix<br/><b>Foxes are soft, choices are hard</b>
 
-> [!IMPORTANT]
+[!IMPORTANT]
 > The idea of _fenn**ecs**_ was to fill the gaps that the author felt working with various established Entity Component Systems. This is why this matrix is clearly imbalanced, it's a shopping list of things that _fenn**ecs**_ does well and was made to do well; and things it may aspire to do but compromised on in order to be able to achieve the others.
 >
 > <em>(TLDR; Unity dumb; .NET 8 really sharp.)</em>
