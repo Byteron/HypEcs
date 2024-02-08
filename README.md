@@ -179,7 +179,7 @@ Here are some raw results from our benchmark suite, from the Vector3 operations 
 
 ------------------------
 
-# 💙 Acknowledgements
+# 🧡 Acknowledgements
 Many thanks to [Byteron (Aaron Winter)](https://github.com/Byteron) for creating [HypEcs](https://github.com/Byteron/HypEcs) and [RelEcs](https://github.com/Byteron/RelEcs), the inspiring libraries that _fenn**ecs**_ evolved from.
 
 
