@@ -58,9 +58,9 @@ The 💫*real magic*💫 is that none of this brevity compromises on performance
 
 ### 🥊 Punching above our weight: How does _fenn**ecs**_ compare to other ECSs?
 
-> [!TIP]
+> [!IMPORTANT]
 > In short, we don't. _fenn**ecs**_ is a tiny, tiny ECS with a focus on good performance and great simplicity. 
-> But it cares enough to provide a few things you might not expect.
+> But it *cares enough* to provide a few things you might not expect.
 
 <details>
 <summary>🥇🥈🥉ECS Comparison Matrix<br/><b>Foxes are soft, choices are hard</b> <em>(TLDR; Unity dumb; .NET 8 really sharp.)</em></summary>
