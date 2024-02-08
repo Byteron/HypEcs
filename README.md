@@ -114,7 +114,7 @@ well; and things it may aspire to do but compromised on in order to be able to a
 
 ------------------------
 
-## 📋 Nimble: _fenn**ecs**_ benchmarks
+## ⏩ Nimble: _fenn**ecs**_ benchmarks
 
 Preliminary (WIP) benchmarks suggest you can expect to process over 2 million components per millisecond on a 2020 CPU.
 We worked hard to minimize allocations, though convenience, especially parallelization, has a tiny GC cost. 
