@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dr2uc3nf0w2sy"]
+
+[ext_resource type="Script" path="res://ExampleWorld.cs" id="1_24wf6"]
+
+[node name="3D Test Scene" type="Node3D"]
+
+[node name="Node" type="Node" parent="."]
+script = ExtResource("1_24wf6")
