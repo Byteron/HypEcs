@@ -1,7 +1,8 @@
 using System;
 using Godot;
+using fennecs;
 
-namespace fennecs.godot;
+namespace Examples;
 
 public partial class MultiMeshExample : MultiMeshInstance3D
 {
@@ -35,7 +36,7 @@ public partial class MultiMeshExample : MultiMeshInstance3D
 		_time += delta * TimeScale;
 		
 		//Update positions
-		query.Run((ref int index, ref Transform3D transform) =>
+		query.RunParallel((ref int index, ref Transform3D transform) =>
 		{
 			var phase1 = index * 3.14 / 100f;
 			var phase2 = index * 3.14f / 130f;
@@ -51,7 +52,7 @@ public partial class MultiMeshExample : MultiMeshInstance3D
 				Z = (float)Math.Sin(phase3 + _time * scale3)
 			};
 			transform = new Transform3D(Basis.Identity, vector * _amplitude);
-		});
+		}, chunkSize:2000);
 
 		// Write transforms into MultiMesh, must be single threaded
 		query.Run((ref int index, ref Transform3D transform) =>

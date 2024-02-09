@@ -7,6 +7,6 @@
     <RootNamespace>fennecsgodot</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="fennecs" Version="0.0.2-pre" />
+    <ProjectReference Include="..\..\fennecs\fennecs.csproj" />
   </ItemGroup>
 </Project>

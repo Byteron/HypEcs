@@ -26,21 +26,54 @@ public class DocumentationExampleTests
     }
 
     [Theory]
-    [InlineData(20_000, 2_000)]
+    [InlineData(2769, 2_001)]
+    [InlineData(18_000, 2_000)]
     [InlineData(20_000, 1_999)]
-    [InlineData(20_000, 37)]
+    [InlineData(1_200, 37)]
     public void Can_Iterate_Multiple_Chunks(int count, int chunkSize)
     {
         using var world = new World();
-        for (int i = 0; i < 20_000; i++)
+        for (int i = 0; i < count; i++)
         {
-            world.Spawn().Add(new Position(1,2,3)).Id();
+            world.Spawn()
+                .Add(new Position(1,2,3))
+                .Add<int>()
+                .Add<float>()
+                .Add("string string")
+                .Add<short>()
+                .Id();
         }
 
-        var query = world.Query<Position>().Build();
+        var query1 = world.Query<Position>().Build();
+        var query2 = world.Query<Position, int>().Build();
+        var query3 = world.Query<float, Position, int>().Build();
+        var query4 = world.Query<Entity, string, Position, int>().Build();
+        var query5 = world.Query<Position, int, float, string, short>().Build();
 
-        query.RunParallel((ref Position pos) => { pos = new Position(2,3,4); }, chunkSize: chunkSize);
+        query1.RunParallel((ref Position _) =>
+        {
+        }, chunkSize: chunkSize);
+        Assert.Equal(count, query1.Count);
 
-        Assert.Equal(count, query.Count);
+        query2.RunParallel((ref Position _, ref int _) =>
+        {
+        }, chunkSize: chunkSize);
+        Assert.Equal(count, query2.Count);
+
+        query3.RunParallel((ref float _, ref Position _, ref int _) =>
+        {
+        }, chunkSize: chunkSize);
+        Assert.Equal(count, query3.Count);
+
+        query4.RunParallel((ref Entity _, ref string _, ref Position _, ref int _) =>
+        {
+        }, chunkSize: chunkSize);
+        Assert.Equal(count, query4.Count);
+
+        query5.RunParallel((ref Position _, ref int _, ref float _, ref string _, ref short _) =>
+        {
+        }, chunkSize: chunkSize);
+        Assert.Equal(count, query5.Count);
+        
     }
 }
