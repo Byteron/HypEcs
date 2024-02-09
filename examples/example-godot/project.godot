@@ -10,14 +10,14 @@ config_version=5
 
 [application]
 
-config/name="fennecs-godot"
+config/name="example-godot"
 run/main_scene="res://3d_test_scene.tscn"
 config/features=PackedStringArray("4.2", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [dotnet]
 
-project/assembly_name="fennecs-godot"
+project/assembly_name="example-godot"
 
 [editor]
 
