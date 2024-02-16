@@ -2,17 +2,211 @@
 
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Data;
 using System.Runtime.CompilerServices;
-
-// ReSharper disable ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-// ReSharper disable ReturnTypeCanBeEnumerable.Global
 
 namespace fennecs;
 
-public sealed class Archetypes : IEnumerable<Table>
+public partial class World : IEnumerable<Table>, IDisposable
 {
-    private EntityMeta[] _meta = new EntityMeta[65536];
+    //private readonly Entity _world;
+
+    [Obsolete("Use world directly")]
+    internal World Archetypes => this;
+
+    
+    public EntityBuilder Spawn()
+    {
+        return new EntityBuilder(this, SpawnInternal());
+    }
+
+
+    public EntityBuilder On(Entity entity)
+    {
+        return new EntityBuilder(this, entity);
+    }
+
+
+    public void Despawn(Entity entity)
+    {
+        this.Despawn(entity.Identity);
+    }
+
+
+    public void DespawnAllWith<T>()
+    {
+        var query = Query<Entity>().Has<T>().Build();
+        query.Run(delegate(Span<Entity> entities)
+        {
+            foreach (var entity in entities) Despawn(entity);
+        });
+    }
+
+
+    public bool IsAlive(Entity entity)
+    {
+        return this.IsAlive(entity.Identity);
+    }
+
+
+    public bool HasComponent<T>(Entity entity)
+    {
+        var type = TypeExpression.Create<T>(Identity.None);
+        return this.HasComponent(type, entity);
+    }
+
+
+    public void AddComponent<T>(Entity entity) where T : new()
+    {
+        var type = TypeExpression.Create<T>(Identity.None);
+        this.AddComponent(type, entity.Identity, new T());
+    }
+
+
+    public void AddComponent<T>(Entity entity, T component)
+    {
+        var type = TypeExpression.Create<T>(Identity.None);
+        this.AddComponent(type, entity.Identity, component);
+    }
+
+
+    public void RemoveComponent<T>(Entity entity)
+    {
+        var type = TypeExpression.Create<T>(Identity.None);
+        this.RemoveComponent(type, entity.Identity);
+    }
+
+
+    public IEnumerable<(TypeExpression, object)> GetComponents(Entity entity)
+    {
+        return this.GetComponents(entity.Identity);
+    }
+
+
+    public Ref<T> GetComponent<T>(Entity entity, Entity target)
+    {
+        return new Ref<T>(ref this.GetComponent<T>(entity.Identity, target.Identity));
+    }
+
+
+    public bool TryGetComponent<T>(Entity entity, out Ref<T> component)
+    {
+        if (!HasComponent<T>(entity))
+        {
+            component = default;
+            return false;
+        }
+
+        component = new Ref<T>(ref this.GetComponent<T>(entity.Identity, Identity.None));
+        return true;
+    }
+
+
+    public bool HasComponent<T>(Entity entity, Entity target)
+    {
+        var type = TypeExpression.Create<T>(target.Identity);
+        return this.HasComponent(type, entity.Identity);
+    }
+
+
+    public bool HasComponent<T>(Entity entity, Type target)
+    {
+        var type = TypeExpression.Create<T>(new Identity(target));
+        return this.HasComponent(type, entity.Identity);
+    }
+
+    /* Todo: probably not worth it
+    public bool HasComponent<T, Target>(Entity entity)
+    {
+        var type = TypeExpression.Create<T>(new Identity(LanguageType<Target>.Id));
+        return _this.HasComponent(type, entity.Identity);
+    }
+    */
+
+
+    public void AddComponent<T>(Entity entity, Entity target) where T : new()
+    {
+        var type = TypeExpression.Create<T>(target.Identity);
+        this.AddComponent(type, entity.Identity, new T(), target);
+    }
+
+
+    /* Todo: probably not worth it
+    public void AddComponent<T, Target>(Entity entity)
+    {
+        var type = TypeExpression.Create<T, Target>();
+        _this.AddComponent(type, entity.Identity, new T());
+    }
+    */
+
+
+    public void AddComponent<T>(Entity entity, T component, Entity target)
+    {
+        var type = TypeExpression.Create<T>(target.Identity);
+        this.AddComponent(type, entity.Identity, component, target);
+    }
+
+    public void RemoveComponent(Entity entity, Type type, Entity target)
+    {
+        var typeExpression = TypeExpression.Create(type, target.Identity);
+        this.RemoveComponent(typeExpression, entity.Identity);
+    }
+
+    public void RemoveComponent<T>(Entity entity, Entity target)
+    {
+        var type = TypeExpression.Create<T>(target.Identity);
+        this.RemoveComponent(type, entity.Identity);
+    }
+
+
+    public IEnumerable<Entity> GetTargets<T>(Entity entity)
+    {
+        var targets = new List<Entity>();
+        this.CollectTargets<T>(targets, entity);
+        return targets;
+    }
+
+
+    public void Dispose()
+    {
+    }
+
+    #region QueryBuilders
+
+    
+    public QueryBuilder<Entity> Query()
+    {
+        return new QueryBuilder<Entity>(this);
+    }
+
+    public QueryBuilder<C> Query<C>()
+    {
+        return new QueryBuilder<C>(this);
+    }
+
+    public QueryBuilder<C1, C2> Query<C1, C2>() where C2 : struct
+    {
+        return new QueryBuilder<C1, C2>(this);
+    }
+
+    public QueryBuilder<C1, C2, C3> Query<C1, C2, C3>() where C1 : struct where C2 : struct where C3 : struct
+    {
+        return new QueryBuilder<C1, C2, C3>(this);
+    }
+
+    public QueryBuilder<C1, C2, C3, C4> Query<C1, C2, C3, C4>() where C1 : struct
+    {
+        return new QueryBuilder<C1, C2, C3, C4>(this);
+    }
+
+    public QueryBuilder<C1, C2, C3, C4, C5> Query<C1, C2, C3, C4, C5>() where C1 : struct
+    {
+        return new QueryBuilder<C1, C2, C3, C4, C5>(this);
+    }
+    
+    #endregion
+    
+    #region Archetypes
+        private EntityMeta[] _meta = new EntityMeta[65536];
     private readonly List<Table> _tables = [];
     private readonly Dictionary<int, Query> _queries = new();
 
@@ -32,7 +226,7 @@ public sealed class Archetypes : IEnumerable<Table>
 
     private Mode _mode = Mode.Immediate;
 
-    public Archetypes()
+    public World()
     {
         AddTable([TypeExpression.Create<Entity>(Identity.None)]);
     }
@@ -71,7 +265,7 @@ public sealed class Archetypes : IEnumerable<Table>
 
     private readonly object _spawnLock = new();
 
-    public Entity Spawn(Type? type = default)
+    internal Entity SpawnInternal(Type? type = default)
     {
         lock (_spawnLock)
         {
@@ -243,7 +437,7 @@ public sealed class Archetypes : IEnumerable<Table>
         MaskPool.Return(mask);
     }
 
-    public Query GetQuery(Mask mask, Func<Archetypes, Mask, List<Table>, Query> createQuery)
+    public Query GetQuery(Mask mask, Func<World, Mask, List<Table>, Query> createQuery)
     {
         if (_queries.TryGetValue(mask, out var query))
         {
@@ -380,7 +574,7 @@ public sealed class Archetypes : IEnumerable<Table>
     {
         lock (_modeChangeLock)
         {
-            if (_mode != Mode.Immediate) throw new InvalidOperationException("Archetypes: Lock called while not in immediate (default) mode");
+            if (_mode != Mode.Immediate) throw new InvalidOperationException("this: Lock called while not in immediate (default) mode");
 
             _lockCount++;
             _mode = Mode.Deferred;
@@ -391,7 +585,7 @@ public sealed class Archetypes : IEnumerable<Table>
     {
         lock (_modeChangeLock)
         {
-            if (_mode != Mode.Deferred) throw new InvalidOperationException("Archetypes: Unlock called while not in deferred mode");
+            if (_mode != Mode.Deferred) throw new InvalidOperationException("this: Unlock called while not in deferred mode");
 
             _lockCount--;
 
@@ -443,4 +637,5 @@ public sealed class Archetypes : IEnumerable<Table>
 
     #endregion
 
+    #endregion
 }

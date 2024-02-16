@@ -55,12 +55,12 @@ public class WorldTests
         world.Spawn().Add("hunter2", typeof(Thread)).Id();
         
         var targets = new List<Entity>();
-        world.Archetypes.CollectTargets<int>(targets);
+        world.CollectTargets<int>(targets);
         Assert.Single(targets);
         Assert.Contains(target1, targets);
         targets.Clear();
 
-        world.Archetypes.CollectTargets<float>(targets);
+        world.CollectTargets<float>(targets);
         Assert.Single(targets);
         Assert.Contains(target2, targets);
     }

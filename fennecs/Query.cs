@@ -4,12 +4,12 @@ using System.Collections;
 
 namespace fennecs;
 
-public class Query(Archetypes archetypes, Mask mask, List<Table> tables) : IEnumerable<Entity>, IEnumerable
+public class Query(World world, Mask mask, List<Table> tables) : IEnumerable<Entity>, IEnumerable
 {
     protected readonly ParallelOptions Options = new() {MaxDegreeOfParallelism = 24};
 
     private protected readonly List<Table> Tables = tables;
-    private protected readonly Archetypes Archetypes = archetypes;
+    private protected readonly World world = world;
 
     protected internal readonly Mask Mask = mask;
     
@@ -47,8 +47,8 @@ public class Query(Archetypes archetypes, Mask mask, List<Table> tables) : IEnum
     
     public bool Contains(Entity entity)
     {
-        var meta = Archetypes.GetEntityMeta(entity.Identity);
-        var table = Archetypes.GetTable(meta.TableId);
+        var meta = world.GetEntityMeta(entity.Identity);
+        var table = world.GetTable(meta.TableId);
         return Tables.Contains(table);
     }
     
