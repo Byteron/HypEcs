@@ -2,7 +2,7 @@
 
 public readonly struct EntityBuilder(World world, Entity entity)
 {
-    public EntityBuilder Add<T>(Entity target = default) where T : new()
+    public EntityBuilder Add<T>(Entity target = default) where T : new() 
     {
         if (target.Identity == Identity.Any) throw new InvalidOperationException("EntityBuilder: Cannot relate to Identity.Any.");
         world.AddComponent<T>(entity, target);

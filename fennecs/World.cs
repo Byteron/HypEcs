@@ -8,30 +8,16 @@ namespace fennecs;
 
 public partial class World : IEnumerable<Table>, IDisposable
 {
-    //private readonly Entity _world;
-
-    [Obsolete("Use world directly")]
-    internal World Archetypes => this;
-
-    
     public EntityBuilder Spawn()
     {
         return new EntityBuilder(this, SpawnInternal());
     }
 
-
     public EntityBuilder On(Entity entity)
     {
         return new EntityBuilder(this, entity);
     }
-
-
-    public void Despawn(Entity entity)
-    {
-        this.Despawn(entity.Identity);
-    }
-
-
+    
     public void DespawnAllWith<T>()
     {
         var query = Query<Entity>().Has<T>().Build();
@@ -41,50 +27,43 @@ public partial class World : IEnumerable<Table>, IDisposable
         });
     }
 
-
-    public bool IsAlive(Entity entity)
-    {
-        return this.IsAlive(entity.Identity);
-    }
-
-
     public bool HasComponent<T>(Entity entity)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        return this.HasComponent(type, entity);
+        return HasComponent(type, entity);
     }
 
 
     public void AddComponent<T>(Entity entity) where T : new()
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        this.AddComponent(type, entity.Identity, new T());
+        AddComponent(type, entity.Identity, new T());
     }
 
 
     public void AddComponent<T>(Entity entity, T component)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        this.AddComponent(type, entity.Identity, component);
+        AddComponent(type, entity.Identity, component);
     }
 
 
     public void RemoveComponent<T>(Entity entity)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        this.RemoveComponent(type, entity.Identity);
+        RemoveComponent(type, entity.Identity);
     }
 
 
     public IEnumerable<(TypeExpression, object)> GetComponents(Entity entity)
     {
-        return this.GetComponents(entity.Identity);
+        return GetComponents(entity.Identity);
     }
 
 
     public Ref<T> GetComponent<T>(Entity entity, Entity target)
     {
-        return new Ref<T>(ref this.GetComponent<T>(entity.Identity, target.Identity));
+        return new Ref<T>(ref GetComponent<T>(entity.Identity, target.Identity));
     }
 
 
@@ -96,7 +75,7 @@ public partial class World : IEnumerable<Table>, IDisposable
             return false;
         }
 
-        component = new Ref<T>(ref this.GetComponent<T>(entity.Identity, Identity.None));
+        component = new Ref<T>(ref GetComponent<T>(entity.Identity, Identity.None));
         return true;
     }
 
@@ -104,21 +83,21 @@ public partial class World : IEnumerable<Table>, IDisposable
     public bool HasComponent<T>(Entity entity, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        return this.HasComponent(type, entity.Identity);
+        return HasComponent(type, entity.Identity);
     }
 
 
     public bool HasComponent<T>(Entity entity, Type target)
     {
         var type = TypeExpression.Create<T>(new Identity(target));
-        return this.HasComponent(type, entity.Identity);
+        return HasComponent(type, entity.Identity);
     }
 
     /* Todo: probably not worth it
     public bool HasComponent<T, Target>(Entity entity)
     {
         var type = TypeExpression.Create<T>(new Identity(LanguageType<Target>.Id));
-        return _this.HasComponent(type, entity.Identity);
+        return _HasComponent(type, entity.Identity);
     }
     */
 
@@ -126,7 +105,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void AddComponent<T>(Entity entity, Entity target) where T : new()
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        this.AddComponent(type, entity.Identity, new T(), target);
+        AddComponent(type, entity.Identity, new T(), target);
     }
 
 
@@ -134,7 +113,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void AddComponent<T, Target>(Entity entity)
     {
         var type = TypeExpression.Create<T, Target>();
-        _this.AddComponent(type, entity.Identity, new T());
+        _AddComponent(type, entity.Identity, new T());
     }
     */
 
@@ -142,26 +121,26 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void AddComponent<T>(Entity entity, T component, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        this.AddComponent(type, entity.Identity, component, target);
+        AddComponent(type, entity.Identity, component, target);
     }
 
     public void RemoveComponent(Entity entity, Type type, Entity target)
     {
         var typeExpression = TypeExpression.Create(type, target.Identity);
-        this.RemoveComponent(typeExpression, entity.Identity);
+        RemoveComponent(typeExpression, entity.Identity);
     }
 
     public void RemoveComponent<T>(Entity entity, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        this.RemoveComponent(type, entity.Identity);
+        RemoveComponent(type, entity.Identity);
     }
 
 
     public IEnumerable<Entity> GetTargets<T>(Entity entity)
     {
         var targets = new List<Entity>();
-        this.CollectTargets<T>(targets, entity);
+        CollectTargets<T>(targets, entity);
         return targets;
     }
 
@@ -208,7 +187,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     #region Archetypes
         private EntityMeta[] _meta = new EntityMeta[65536];
     private readonly List<Table> _tables = [];
-    private readonly Dictionary<int, Query> _queries = new();
+    private readonly Dictionary<Mask, Query> _queries = new();
 
 
     private readonly ConcurrentBag<Identity> _unusedIds = [];
@@ -546,6 +525,8 @@ public partial class World : IEnumerable<Table>, IDisposable
 
     private void ApplyDeferredOperations()
     {
+        if (_deferredOperations.IsEmpty) return;
+        
         foreach (var op in _deferredOperations)
         {
             AssertAlive(op.Identity);

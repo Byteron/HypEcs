@@ -116,17 +116,19 @@ public partial class MultiMeshExample : Node
 		MeshInstance.Multimesh.VisibleInstanceCount = -1;
 
 		SpawnWave(SpawnCount * 5);
+
+		query = _world.Query<int, Matrix4X3>().Build();
 	}
 
 	private float[] _submissionArray = Array.Empty<float>();
+	private Query<int, Matrix4X3> query;
 
 	public override void _Process(double delta)
 	{
-		var query = _world.Query<int, Matrix4X3>().Build();
 		_time += delta * TimeScale;
 
 		//Update positions
-		query.RunParallel((ref int index, ref Matrix4X3 transform) =>
+		query.Job((ref int index, ref Matrix4X3 transform) =>
 		{
 			var phase1 = index / 5000f * 2f;
 			var group1 = 1 + (index / 1000)%5;

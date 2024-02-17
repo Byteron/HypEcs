@@ -25,7 +25,7 @@ public class WorldTests
         Assert.NotEqual(entity, Entity.Any);
         return entity;
     }
-    
+
     [Fact]
     public void World_Count_Accurate()
     {
@@ -53,7 +53,7 @@ public class WorldTests
         world.Spawn().Add(666, target1).Id();
         world.Spawn().Add(1.0f, target2).Id();
         world.Spawn().Add("hunter2", typeof(Thread)).Id();
-        
+
         var targets = new List<Entity>();
         world.CollectTargets<int>(targets);
         Assert.Single(targets);
@@ -87,5 +87,53 @@ public class WorldTests
         world.Despawn(target1);
         Assert.Equal(0, query1.Count);
         Assert.Equal(1000, query2.Count);
+    }
+
+
+    private class NewableClass;
+
+    private struct NewableStruct;
+
+    [Fact]
+    public void Added_Newable_Class_is_not_Null()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add<NewableClass>().Id();
+        Assert.True(world.HasComponent<NewableClass>(entity));
+        Assert.NotNull(world.GetComponent<NewableClass>(entity));
+    }
+
+    [Fact]
+    public void Added_Newable_Struct_is_default()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add<NewableStruct>().Id();
+        Assert.True(world.HasComponent<NewableStruct>(entity));
+        Assert.Equal(default, world.GetComponent<NewableStruct>(entity));
+    }
+
+    [Fact]
+    public void Can_add_Non_Newable()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add<string>("12").Id();
+        Assert.True(world.HasComponent<string>(entity));
+        Assert.NotNull(world.GetComponent<string>(entity));
+    }
+
+
+
+    [Fact]
+    public void Adding_Component_in_Deferred_Mode_Is_Deferred()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        world.Lock();
+        world.On(entity).Add(666);
+        Assert.False(world.HasComponent<int>(entity));
+        Assert.Throws<KeyNotFoundException>(() => world.GetComponent<int>(entity));
+        world.Unlock();
+        Assert.True(world.HasComponent<int>(entity));
+        Assert.Equal(666, world.GetComponent<int>(entity));
     }
 }

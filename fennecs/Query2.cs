@@ -12,10 +12,12 @@ public class Query<C1, C2>(World world, Mask mask, List<Table> tables) : Query(w
         var storage2 = table.GetStorage<C2>(Identity.None);
         return new RefValueTuple<C1, C2>(ref storage1[meta.Row], ref storage2[meta.Row]);
     }
+    
+    private readonly CountdownEvent _countdown = new(1);
 
     #region Runners
 
-    public void Run(RefAction_CC<C1, C2> action)
+    public void ForEach(RefAction_CC<C1, C2> action)
     {
         world.Lock();
 
@@ -24,176 +26,144 @@ public class Query<C1, C2>(World world, Mask mask, List<Table> tables) : Query(w
             if (table.IsEmpty) continue;
             var storage1 = table.GetStorage<C1>(Identity.None).AsSpan(0, table.Count);
             var storage2 = table.GetStorage<C2>(Identity.None).AsSpan(0, table.Count);
-
-            for (var i = 0; i < table.Count; i++) action(ref storage1[i], ref storage2[i]);
+            for (var i = 0; i < table.Count; i++)
+            {
+                action(ref storage1[i], ref storage2[i]);
+            }
         }
 
         world.Unlock();
     }
 
-    public void RunParallel(RefAction_CC<C1, C2> action, int chunkSize = int.MaxValue)
-    {
-        world.Lock();
-
-        using var countdown = new CountdownEvent(1);
-
-        foreach (var table in Tables)
-        {
-            if (table.IsEmpty) continue;
-            var storage1 = table.GetStorage<C1>(Identity.None);
-            var storage2 = table.GetStorage<C2>(Identity.None);
-            var length = table.Count;
-
-            var partitions = Math.Max(length / chunkSize, 1);
-            var partitionSize = length / partitions;
-
-            for (var partition = 0; partition < partitions; partition++)
-            {
-                countdown.AddCount();
-
-                ThreadPool.QueueUserWorkItem(delegate(int part)
-                {
-                    var s1 = storage1.AsSpan(part * partitionSize, partitionSize);
-                    var s2 = storage2.AsSpan(part * partitionSize, partitionSize);
-
-                    for (var i = 0; i < s1.Length; i++)
-                    {
-                        action(ref s1[i], ref s2[i]);
-                    }
-
-                    // ReSharper disable once AccessToDisposedClosure // we won't leave here until it's done
-                    countdown.Signal();
-                }, partition, preferLocal: true);
-            }
-
-            /*
-            //Optimization: Also process one partition right here on the calling thread.
-            var s1 = storage1.AsSpan();
-            var s2 = storage2.AsSpan();
-            for (var i = 0; i < partitionSize; i++)
-            {
-                action(ref s1[i], ref s2[i]);
-            }
-            */
-        }
-
-        countdown.Signal();
-        countdown.Wait();
-        world.Unlock();
-    }
-
-    public void Run<U>(RefAction_CCU<C1, C2, U> action, U uniform)
+    public void ForEach<U>(RefAction_CCU<C1, C2, U> action, U uniform)
     {
         world.Lock();
 
         foreach (var table in Tables)
         {
             if (table.IsEmpty) continue;
-            var s1 = table.GetStorage<C1>(Identity.None).AsSpan(0, table.Count);
-            var s2 = table.GetStorage<C2>(Identity.None).AsSpan(0, table.Count);
-            for (var i = 0; i < table.Count; i++) action(ref s1[i], ref s2[i], uniform);
+            var storage1 = table.GetStorage<C1>(Identity.None).AsSpan(0, table.Count);
+            var storage2 = table.GetStorage<C2>(Identity.None).AsSpan(0, table.Count);
+            for (var i = 0; i < table.Count; i++)
+            {
+                action(ref storage1[i], ref storage2[i], uniform);
+            }
         }
 
         world.Unlock();
     }
-
-
-    public void RunParallel<U>(RefAction_CCU<C1, C2, U> action, U uniform, int chunkSize = int.MaxValue)
-    {
-        world.Lock();
-        using var countdown = new CountdownEvent(1);
-
-        foreach (var table in Tables)
-        {
-            if (table.IsEmpty) continue;
-            var storage1 = table.GetStorage<C1>(Identity.None);
-            var storage2 = table.GetStorage<C2>(Identity.None);
-            var length = table.Count;
-
-            var partitions = Math.Max(length / chunkSize, 1);
-            var partitionSize = length / partitions;
-
-            for (var partition = 0; partition < partitions; partition++)
-            {
-                countdown.AddCount();
-
-                ThreadPool.QueueUserWorkItem(delegate(int part)
-                {
-                    var s1 = storage1.AsSpan(part * partitionSize, partitionSize);
-                    var s2 = storage2.AsSpan(part * partitionSize, partitionSize);
-
-                    for (var i = 0; i < s1.Length; i++)
-                    {
-                        action(ref s1[i], ref s2[i], uniform);
-                    }
-
-                    // ReSharper disable once AccessToDisposedClosure
-                    countdown.Signal();
-                }, partition, preferLocal: true);
-            }
-
-            /*
-            //Optimization: Also process one partition right here on the calling thread.
-            var s1 = storage1.AsSpan(0, partitionSize);
-            var s2 = storage2.AsSpan(0, partitionSize);
-            for (var i = 0; i < partitionSize; i++)
-            {
-                action(ref s1[i], ref s2[i], uniform);
-            }
-            */
-        }
-
-        countdown.Signal();
-        countdown.Wait();
-        world.Unlock();
-
-    }
-
 
     public void Run(SpanAction_CC<C1, C2> action)
     {
         world.Lock();
+
         foreach (var table in Tables)
         {
             if (table.IsEmpty) continue;
-            var s1 = table.GetStorage<C1>(Identity.None).AsSpan(0, table.Count);
-            var s2 = table.GetStorage<C2>(Identity.None).AsSpan(0, table.Count);
-            action(s1, s2);
+            var span1 = table.GetStorage<C1>(Identity.None).AsSpan(0, table.Count);
+            var span2 = table.GetStorage<C2>(Identity.None).AsSpan(0, table.Count);
+            action(span1, span2);
         }
 
         world.Unlock();
     }
 
-    public void Raw(Action<Memory<C1>, Memory<C2>> action)
+
+    public void Job(RefAction_CC<C1, C2> action, int chunkSize = int.MaxValue)
     {
         world.Lock();
+        _countdown.Reset();
+
+        using var jobs = PooledList<Work<C1, C2>>.Rent();
+
         foreach (var table in Tables)
         {
             if (table.IsEmpty) continue;
-            var m1 = table.GetStorage<C1>(Identity.None).AsMemory(0, table.Count);
-            var m2 = table.GetStorage<C2>(Identity.None).AsMemory(0, table.Count);
-            action(m1, m2);
-        }
+            var storage1 = table.GetStorage<C1>(Identity.None);
+            var storage2 = table.GetStorage<C2>(Identity.None);
 
-        world.Unlock();
-    }
+            var count = table.Count; // storage.Length is the capacity, not the count.
+            var partitions = count / chunkSize + Math.Sign(count % chunkSize);
 
-    public void RawParallel(Action<Memory<C1>, Memory<C2>> action)
-    {
-        world.Lock();
-
-        Parallel.ForEach(Tables, Options,
-            table =>
+            for (var chunk = 0; chunk < partitions; chunk++)
             {
-                if (table.IsEmpty) return; //TODO: This wastes a scheduled thread.
-                var m1 = table.GetStorage<C1>(Identity.None).AsMemory(0, table.Count);
-                var m2 = table.GetStorage<C2>(Identity.None).AsMemory(0, table.Count);
-                action(m1, m2);
-            });
+                _countdown.AddCount();
+
+                var start = chunk * chunkSize;
+                var length = Math.Min(chunkSize, count - start);
+
+                var job = JobPool<Work<C1, C2>>.Rent();
+                job.Memory1 = storage1.AsMemory(start, length);
+                job.Memory2 = storage2.AsMemory(start, length);
+                job.Action = action;
+                job.CountDown = _countdown;
+                jobs.Add(job);
+
+                ThreadPool.UnsafeQueueUserWorkItem(job, true);
+            }
+        }
+
+        _countdown.Signal();
+        _countdown.Wait();
+
+        JobPool<Work<C1, C2>>.Return(jobs);
 
         world.Unlock();
     }
 
-    #endregion
+    public void Job<U>(RefAction_CCU<C1, C2, U> action, U uniform, int chunkSize = int.MaxValue)
+    {
+        world.Lock();
+        _countdown.Reset();
 
+        using var jobs = PooledList<UniformWork<C1, C2, U>>.Rent();
+
+        foreach (var table in Tables)
+        {
+            if (table.IsEmpty) continue;
+            var storage1 = table.GetStorage<C1>(Identity.None);
+            var storage2 = table.GetStorage<C2>(Identity.None);
+
+            var count = table.Count; // storage.Length is the capacity, not the count.
+            var partitions = count / chunkSize + Math.Sign(count % chunkSize);
+
+            for (var chunk = 0; chunk < partitions; chunk++)
+            {
+                _countdown.AddCount();
+
+                var start = chunk * chunkSize;
+                var length = Math.Min(chunkSize, count - start);
+
+                var job = JobPool<UniformWork<C1, C2, U>>.Rent();
+                job.Memory1 = storage1.AsMemory(start, length);
+                job.Memory2 = storage2.AsMemory(start, length);
+                job.Action = action;
+                job.Uniform = uniform;
+                job.CountDown = _countdown;
+                jobs.Add(job);
+                ThreadPool.UnsafeQueueUserWorkItem(job, true);
+            }
+        }
+
+        _countdown.Signal();
+        _countdown.Wait();
+
+        JobPool<UniformWork<C1, C2, U>>.Return(jobs);
+
+        world.Unlock();
+    }
+
+    public void Raw(MemoryAction_CC<C1, C2> action)
+    {
+        world.Lock();
+
+        foreach (var table in Tables)
+        {
+            if (table.IsEmpty) continue;
+            action(table.Memory<C1>(Identity.None), table.Memory<C2>(Identity.None));
+        }
+
+        world.Unlock();
+    }
+    #endregion
 }

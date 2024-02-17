@@ -8,7 +8,7 @@ namespace Benchmark.ECS;
 [ShortRunJob]
 [ThreadingDiagnoser]
 [MemoryDiagnoser]
-[HardwareCounters(HardwareCounter.CacheMisses)]
+//[HardwareCounters(HardwareCounter.CacheMisses)]
 [Orderer(BenchmarkDotNet.Order.SummaryOrderPolicy.FastestToSlowest)]
 public class ChunkingBenchmarks
 {
