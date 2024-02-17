@@ -136,4 +136,74 @@ public class WorldTests
         Assert.True(world.HasComponent<int>(entity));
         Assert.Equal(666, world.GetComponent<int>(entity));
     }
+
+
+    [Fact]
+    public void Can_Lock_and_Unlock_World()
+    {
+        using var world = new World();
+        world.Lock();
+        world.Unlock();
+    }
+
+    [Fact]
+    public void Cannot_Lock_Locked_World()
+    {
+        using var world = new World();
+        world.Lock();
+        Assert.Throws<InvalidOperationException>(() => world.Lock());
+    }
+    
+    [Fact]
+    public void Cannot_Unlock_Unlocked_World()
+    {
+        using var world = new World();
+        Assert.Throws<InvalidOperationException>(() => world.Unlock());
+    }
+
+    [Fact]
+    public void Can_apply_deferred_Spawn()
+    {
+        using var world = new World();
+        world.Lock();
+        var entity = world.Spawn().Id();
+        world.Unlock();
+        Assert.True(world.IsAlive(entity));
+    }
+
+    [Fact]
+    public void Can_apply_deferred_Add()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        world.Lock();
+        world.On(entity).Add(666);
+        Assert.False(world.HasComponent<int>(entity));
+        world.Unlock();
+        Assert.True(world.HasComponent<int>(entity));
+        Assert.Equal(666, world.GetComponent<int>(entity));
+    }
+    
+    [Fact]
+    public void Can_apply_deferred_Remove()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add(666).Id();
+        world.Lock();
+        world.On(entity).Remove<int>();
+        world.Unlock();
+        Assert.False(world.HasComponent<int>(entity));
+    }
+    
+    [Fact]
+    public void Can_apply_deferred_Despawn()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add(666).Add("hallo").Id();
+        world.Lock();
+        world.Despawn(entity);
+        Assert.True(world.IsAlive(entity));
+        world.Unlock();
+        Assert.False(world.IsAlive(entity));
+    }
 }

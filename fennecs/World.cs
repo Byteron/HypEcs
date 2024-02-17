@@ -187,7 +187,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     #region Archetypes
         private EntityMeta[] _meta = new EntityMeta[65536];
     private readonly List<Table> _tables = [];
-    private readonly Dictionary<Mask, Query> _queries = new();
+    private readonly Dictionary<int, Query> _queries = new();
 
 
     private readonly Stack<Identity> _unusedIds = [];
@@ -201,7 +201,6 @@ public partial class World : IEnumerable<Table>, IDisposable
     private readonly Dictionary<Identity, HashSet<TypeExpression>> _typesByRelationTarget = new();
 
     private readonly object _modeChangeLock = new();
-    private int _lockCount;
 
     private Mode _mode = Mode.Immediate;
 
@@ -562,7 +561,6 @@ public partial class World : IEnumerable<Table>, IDisposable
         {
             if (_mode != Mode.Immediate) throw new InvalidOperationException("this: Lock called while not in immediate (default) mode");
 
-            _lockCount++;
             _mode = Mode.Deferred;
         }
     }
@@ -572,10 +570,6 @@ public partial class World : IEnumerable<Table>, IDisposable
         lock (_modeChangeLock)
         {
             if (_mode != Mode.Deferred) throw new InvalidOperationException("this: Unlock called while not in deferred mode");
-
-            _lockCount--;
-
-            if (_lockCount != 0) return;
 
             _mode = Mode.Immediate;
             ApplyDeferredOperations();

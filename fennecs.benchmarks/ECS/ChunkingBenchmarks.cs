@@ -1,6 +1,5 @@
 ﻿using System.Numerics;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Diagnosers;
 using fennecs;
 
 namespace Benchmark.ECS;
