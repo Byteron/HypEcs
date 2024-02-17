@@ -329,4 +329,19 @@ public class WorldTests(ITestOutputHelper output)
         Assert.True(world.TryGetComponent<int>(entity, target, out var value));
         Assert.Equal(666, value);
     }
+
+    [Fact]
+    private void Can_Fail_Try_Get_Component_With_Target_Entity()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.On(entity).Add(666.0, target);
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            Assert.False(world.TryGetComponent<int>(entity, target, out var reference));
+            output.WriteLine(reference.Value.ToString());
+        });
+    }
+
 }

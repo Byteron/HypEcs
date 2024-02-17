@@ -117,7 +117,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void AddComponent<T>(Entity entity, Entity target) where T : new()
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        AddComponent(type, entity.Identity, new T(), target);
+        AddComponent(type, entity.Identity, new T());
     }
 
 
@@ -133,7 +133,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void AddComponent<T>(Entity entity, T component, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        AddComponent(type, entity.Identity, component, target);
+        AddComponent(type, entity.Identity, component);
     }
 
     public void RemoveComponent(Entity entity, Type type, Entity target)
@@ -320,7 +320,7 @@ public partial class World : IEnumerable<Table>, IDisposable
         }
     }
 
-    internal void AddComponent<T>(TypeExpression typeExpression, Identity identity, T data, Entity target = default)
+    internal void AddComponent<T>(TypeExpression typeExpression, Identity identity, T data)
     {
         AssertAlive(identity);
 
