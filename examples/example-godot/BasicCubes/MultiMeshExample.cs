@@ -124,11 +124,6 @@ public partial class MultiMeshExample : Node
 	private float[] _submissionArray = Array.Empty<float>();
 	private Query<int, Matrix4X3> query;
 
-	struct UniformData
-	{
-		public float time;
-		public float amplitude;
-	}
 	public override void _Process(double delta)
 	{
 		_time += delta * TimeScale;

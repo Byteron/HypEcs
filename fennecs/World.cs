@@ -30,7 +30,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     public bool HasComponent<T>(Entity entity)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        return HasComponent(type, entity);
+        return HasComponent(entity, type);
     }
 
 
@@ -41,29 +41,30 @@ public partial class World : IEnumerable<Table>, IDisposable
     }
 
 
-    public void AddComponent<T>(Entity entity, T component)
+    public void AddComponent<T>(Entity entity, T data)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        AddComponent(type, entity.Identity, component);
+        AddComponent(type, entity.Identity, data);
     }
 
 
     public void RemoveComponent<T>(Entity entity)
     {
         var type = TypeExpression.Create<T>(Identity.None);
-        RemoveComponent(type, entity.Identity);
+        RemoveComponent(entity.Identity, type);
+    }
+
+
+    public void RemoveComponent<T>(Entity entity, Type target)
+    {
+        var type = TypeExpression.Create<T>(new Identity(target));
+        RemoveComponent(entity, type);
     }
 
 
     public IEnumerable<(TypeExpression, object)> GetComponents(Entity entity)
     {
         return GetComponents(entity.Identity);
-    }
-
-
-    public Ref<T> GetComponent<T>(Entity entity, Entity target)
-    {
-        return new Ref<T>(ref GetComponent<T>(entity.Identity, target.Identity));
     }
 
 
@@ -80,26 +81,37 @@ public partial class World : IEnumerable<Table>, IDisposable
     }
 
 
+    public bool TryGetComponent<T>(Entity entity, Identity target, out Ref<T> component)
+    {
+        if (!HasComponent<T>(entity, target))
+        {
+            component = default;
+            return false;
+        }
+
+        component = new Ref<T>(ref GetComponent<T>(entity.Identity, target));
+        return true;
+    }
+
+
     public bool HasComponent<T>(Entity entity, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        return HasComponent(type, entity.Identity);
+        return HasComponent(entity.Identity, type);
     }
 
 
     public bool HasComponent<T>(Entity entity, Type target)
     {
         var type = TypeExpression.Create<T>(new Identity(target));
-        return HasComponent(type, entity.Identity);
+        return HasComponent(entity.Identity, type);
     }
 
-    /* Todo: probably not worth it
     public bool HasComponent<T, Target>(Entity entity)
     {
         var type = TypeExpression.Create<T>(new Identity(LanguageType<Target>.Id));
-        return _HasComponent(type, entity.Identity);
+        return HasComponent(entity.Identity, type);
     }
-    */
 
 
     public void AddComponent<T>(Entity entity, Entity target) where T : new()
@@ -127,13 +139,13 @@ public partial class World : IEnumerable<Table>, IDisposable
     public void RemoveComponent(Entity entity, Type type, Entity target)
     {
         var typeExpression = TypeExpression.Create(type, target.Identity);
-        RemoveComponent(typeExpression, entity.Identity);
+        RemoveComponent(entity.Identity, typeExpression);
     }
 
     public void RemoveComponent<T>(Entity entity, Entity target)
     {
         var type = TypeExpression.Create<T>(target.Identity);
-        RemoveComponent(type, entity.Identity);
+        RemoveComponent(entity.Identity, type);
     }
 
 
@@ -301,7 +313,7 @@ public partial class World : IEnumerable<Table>, IDisposable
                 {
                     for (var i = tableWithType.Count - 1; i >= 0; i--)
                     {
-                        RemoveComponent(type, tableWithType.Identities[i]);
+                        RemoveComponent(tableWithType.Identities[i], type);
                     }
                 }
             }
@@ -363,7 +375,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     }
 
 
-    internal bool HasComponent(TypeExpression typeExpression, Identity identity)
+    internal bool HasComponent(Identity identity, TypeExpression typeExpression)
     {
         var meta = _meta[identity.Id];
         return meta.Identity != Identity.None
@@ -372,8 +384,14 @@ public partial class World : IEnumerable<Table>, IDisposable
     }
 
 
-    internal void RemoveComponent(TypeExpression typeExpression, Identity identity)
+    internal void RemoveComponent(Identity identity, TypeExpression typeExpression)
     {
+        if (_mode == Mode.Deferred)
+        {
+            _deferredOperations.Enqueue(new DeferredOperation {Operation = Deferred.Remove, Identity = identity, TypeExpression = typeExpression});
+            return;
+        }
+
         ref var meta = ref _meta[identity.Id];
         var oldTable = _tables[meta.TableId];
 
@@ -381,14 +399,7 @@ public partial class World : IEnumerable<Table>, IDisposable
         {
             throw new ArgumentException($"cannot remove non-existent component {typeExpression} from entity {identity}");
         }
-
-        if (_mode == Mode.Deferred)
-        {
-            _deferredOperations.Enqueue(new DeferredOperation {Operation = Deferred.Remove, Identity = identity, TypeExpression = typeExpression});
-            return;
-        }
-
-
+        
         var oldEdge = oldTable.GetTableEdge(typeExpression);
 
         var newTable = oldEdge.Remove;
@@ -402,8 +413,6 @@ public partial class World : IEnumerable<Table>, IDisposable
 
             var newEdge = newTable.GetTableEdge(typeExpression);
             newEdge.Add = oldTable;
-
-            //Tables.Add(newTable); <-- already added in AddTable
         }
 
         var newRow = Table.MoveEntry(identity, meta.Row, oldTable, newTable);
@@ -457,8 +466,6 @@ public partial class World : IEnumerable<Table>, IDisposable
         return ref _meta[identity.Id];
     }
     
-    public Table this[int tableId] => _tables[tableId];
-
     internal Table GetTable(int tableId)
     {
         return _tables[tableId];
@@ -541,13 +548,11 @@ public partial class World : IEnumerable<Table>, IDisposable
                     AddComponent(op.TypeExpression, op.Identity, op.Data);
                     break;
                 case Deferred.Remove:
-                    RemoveComponent(op.TypeExpression, op.Identity);
+                    RemoveComponent(op.Identity, op.TypeExpression);
                     break;
                 case Deferred.Despawn:
                     Despawn(op.Identity);
                     break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
         }
 
@@ -601,7 +606,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     #region Assert Helpers
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal void AssertAlive(Identity identity)
+    private void AssertAlive(Identity identity)
     {
         if (IsAlive(identity)) return;
         

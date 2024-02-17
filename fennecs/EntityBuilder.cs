@@ -10,11 +10,11 @@ public readonly struct EntityBuilder(World world, Entity entity)
     }
 
     public EntityBuilder Add<T>(Type type) where T : new()
-    { 
+    {
         world.AddComponent<T>(entity, new Identity(type));
         return this;
     }
-
+    
     
     public EntityBuilder Add<T>(T data)
     {

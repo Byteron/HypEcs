@@ -1,6 +1,6 @@
 namespace fennecs.tests;
 
-public class WorldTests
+public class WorldTests(ITestOutputHelper output)
 {
     [Fact]
     public World World_Creates()
@@ -153,7 +153,7 @@ public class WorldTests
         world.Lock();
         Assert.Throws<InvalidOperationException>(() => world.Lock());
     }
-    
+
     [Fact]
     public void Cannot_Unlock_Unlocked_World()
     {
@@ -183,7 +183,7 @@ public class WorldTests
         Assert.True(world.HasComponent<int>(entity));
         Assert.Equal(666, world.GetComponent<int>(entity));
     }
-    
+
     [Fact]
     public void Can_apply_deferred_Remove()
     {
@@ -194,7 +194,7 @@ public class WorldTests
         world.Unlock();
         Assert.False(world.HasComponent<int>(entity));
     }
-    
+
     [Fact]
     public void Can_apply_deferred_Despawn()
     {
@@ -205,5 +205,128 @@ public class WorldTests
         Assert.True(world.IsAlive(entity));
         world.Unlock();
         Assert.False(world.IsAlive(entity));
+    }
+
+    [Fact]
+    public void Can_apply_deferred_Relation()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.Lock();
+        world.On(entity).Add(666, target);
+        Assert.False(world.HasComponent<int>(entity, target));
+        world.Unlock();
+        Assert.True(world.HasComponent<int>(entity, target));
+    }
+
+    [Fact]
+    public void Can_apply_deferred_Relation_Remove()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.Lock();
+        world.On(entity).Add(666, target);
+        world.On(entity).Remove<int>(target);
+        Assert.False(world.HasComponent<int>(entity));
+        Assert.False(world.HasComponent<int>(target));
+        world.Unlock();
+        Assert.False(world.HasComponent<int>(entity));
+        Assert.False(world.HasComponent<int>(target));
+    }
+
+    [Fact]
+    private void Can_Remove_Components_in_Reverse_Order()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add(666).Add("hallo").Id();
+        world.On(entity).Remove<int>();
+        Assert.False(world.HasComponent<int>(entity));
+        world.On(entity).Remove<string>();
+        Assert.False(world.HasComponent<string>(entity));
+    }
+
+    [Fact]
+    private void Can_Test_for_Entity_Relation_Component_Presence()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.On(entity).Add(666, target);
+        Assert.True(world.HasComponent<int>(entity, target));
+    }
+
+    [Fact]
+    private void Can_Test_for_Type_Relation_Component_Presence()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.On(entity).Add(666, typeof(object));
+        Assert.True(world.HasComponent<int>(entity, typeof(object)));
+        Assert.True(world.HasComponent<int, object>(entity));
+    }
+
+    [Fact]
+    private void Can_Add_Component_with_T_new()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        world.AddComponent<NewableStruct>(entity);
+        Assert.True(world.HasComponent<NewableStruct>(entity));
+    }
+
+    [Fact]
+    private void Can_Remove_Component_with_Type_and_Entity_Target()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.On(entity).Add(666, target);
+        world.RemoveComponent(entity, typeof(int), target);
+        Assert.False(world.HasComponent<int>(entity, target));
+    }
+    
+    [Fact]
+    private void Can_Remove_Component_with_Type_and_Type_Target()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        world.On(entity).Add(666, typeof(object));
+        world.RemoveComponent<int>(entity, typeof(object));
+        Assert.False(world.HasComponent<int>(entity, typeof(object)));
+    }
+
+    [Fact]
+    private void Can_Try_Get_Component()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add(666).Id();
+        Assert.True(world.TryGetComponent<int>(entity, out var value));
+        Assert.Equal(666, value);
+    }
+    
+    [Fact]
+    private void Can_Fail_Try_Get_Component()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Add(666.0).Id();
+        Assert.Throws<NullReferenceException>(() =>
+        {
+            Assert.False(world.TryGetComponent<int>(entity, out var reference));
+            output.WriteLine(reference.Value.ToString());
+        });
+    }
+
+    [Fact]
+    private void Can_Try_Get_Component_With_Target_Entity()
+    {
+        using var world = new World();
+        var entity = world.Spawn().Id();
+        var target = world.Spawn().Id();
+        world.On(entity).Add(666, target);
+        Assert.True(world.TryGetComponent<int>(entity, target, out var value));
+        Assert.Equal(666, value);
     }
 }
