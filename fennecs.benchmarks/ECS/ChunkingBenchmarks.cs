@@ -85,7 +85,13 @@ public class ChunkingBenchmarks
     [Benchmark]
     public void CrossProduct_Run()
     {
-        _queryV3.ForEach(delegate(ref Vector3 v) { v = Vector3.Cross(v, UniformConstantVector); });
+        _queryV3.ForEach(static (ref Vector3 v) => { v = Vector3.Cross(v, UniformConstantVector); });
+    }
+
+    [Benchmark]
+    public void CrossProduct_RunU()
+    {
+        _queryV3.ForEach(static (ref Vector3 v, Vector3 uniform) => { v = Vector3.Cross(v, uniform); }, UniformConstantVector);
     }
 
     [Benchmark]

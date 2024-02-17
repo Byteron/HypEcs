@@ -190,7 +190,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     private readonly Dictionary<Mask, Query> _queries = new();
 
 
-    private readonly ConcurrentBag<Identity> _unusedIds = [];
+    private readonly Stack<Identity> _unusedIds = [];
     private Table entityRoot => _tables[0];
 
     internal int Count { get; private set; }
@@ -248,7 +248,7 @@ public partial class World : IEnumerable<Table>, IDisposable
     {
         lock (_spawnLock)
         {
-            if (!_unusedIds.TryTake(out var identity))
+            if (!_unusedIds.TryPop(out var identity))
             {
                 identity = new Identity(++Count);
             }
@@ -271,36 +271,39 @@ public partial class World : IEnumerable<Table>, IDisposable
 
     public void Despawn(Identity identity)
     {
-        AssertAlive(identity);
-
-        if (_mode == Mode.Deferred)
+        lock (_spawnLock)
         {
-            _deferredOperations.Enqueue(new DeferredOperation {Operation = Deferred.Despawn, Identity = identity});
-            return;
-        }
+            AssertAlive(identity);
 
-        ref var meta = ref _meta[identity.Id];
-
-        var table = _tables[meta.TableId];
-        table.Remove(meta.Row);
-        meta.Clear();
-
-        _unusedIds.Add(identity.Successor);
-        
-        // Find entity-entity relation reverse lookup (if applicable)
-        if (!_typesByRelationTarget.TryGetValue(identity, out var list)) return;
-
-        //Remove components from all entities that had a relation
-        foreach (var type in list)
-        {
-            var tablesWithType = _tablesByType[type];
-
-            //TODO: There should be a bulk remove method instead.
-            foreach (var tableWithType in tablesWithType)
+            if (_mode == Mode.Deferred)
             {
-                for (var i = tableWithType.Count-1; i >= 0; i--)
+                _deferredOperations.Enqueue(new DeferredOperation {Operation = Deferred.Despawn, Identity = identity});
+                return;
+            }
+
+            ref var meta = ref _meta[identity.Id];
+
+            var table = _tables[meta.TableId];
+            table.Remove(meta.Row);
+            meta.Clear();
+
+            _unusedIds.Push(identity.Successor);
+
+            // Find entity-entity relation reverse lookup (if applicable)
+            if (!_typesByRelationTarget.TryGetValue(identity, out var list)) return;
+
+            //Remove components from all entities that had a relation
+            foreach (var type in list)
+            {
+                var tablesWithType = _tablesByType[type];
+
+                //TODO: There should be a bulk remove method instead.
+                foreach (var tableWithType in tablesWithType)
                 {
-                    RemoveComponent(type, tableWithType.Identities[i]);
+                    for (var i = tableWithType.Count - 1; i >= 0; i--)
+                    {
+                        RemoveComponent(type, tableWithType.Identities[i]);
+                    }
                 }
             }
         }
@@ -431,10 +434,12 @@ public partial class World : IEnumerable<Table>, IDisposable
             _tablesByType[type] = typeTables;
         }
 
-        var matchingTables = typeTables
-            .Where(table => table.Matches(mask))
-            .ToList();
-
+        var matchingTables = PooledList<Table>.Rent();
+        foreach (var table in _tables)
+        {
+            if (table.Matches(mask)) matchingTables.Add(table);
+        }
+        
         query = createQuery(this, mask, matchingTables);
 
         _queries.Add(mask, query);

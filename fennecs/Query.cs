@@ -99,6 +99,13 @@ public delegate void SpanAction_CCCC<C0, C1, C2, C3>(Span<C0> c0, Span<C1> c1, S
 public delegate void SpanAction_CCCCC<C0, C1, C2, C3, C4>(Span<C0> c0, Span<C1> c1, Span<C2> c2, Span<C3> c3, Span<C4> c4);
 
 
+public delegate void SpanAction_CU<C0, U>(Span<C0> c0, U uniform);
+public delegate void SpanAction_CCU<C0, C1, U>(Span<C0> c0, Span<C1> c1, U uniform);
+public delegate void SpanAction_CCCU<C0, C1, C2, U>(Span<C0> c0, Span<C1> c1, Span<C2> c2, U uniform);
+public delegate void SpanAction_CCCCU<C0, C1, C2, C3, U>(Span<C0> c0, Span<C1> c1, Span<C2> c2, Span<C3> c3, U uniform); 
+public delegate void SpanAction_CCCCCU<C0, C1, C2, C3, C4, U>(Span<C0> c0, Span<C1> c1, Span<C2> c2, Span<C3> c3, Span<C4> c4, U uniform);
+
+
 // ReSharper enable IdentifierTypo
 // ReSharper enable InconsistentNaming
 

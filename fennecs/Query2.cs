@@ -53,6 +53,21 @@ public class Query<C1, C2>(World world, Mask mask, List<Table> tables) : Query(w
         world.Unlock();
     }
 
+    public void Span<U>(SpanAction_CCU<C1, C2, U> action, U uniform)
+    {
+        world.Lock();
+
+        foreach (var table in Tables)
+        {
+            if (table.IsEmpty) continue;
+            var storage1 = table.Memory<C1>(Identity.None);
+            var storage2 = table.Memory<C2>(Identity.None);
+            action(storage1.Span, storage2.Span, uniform);
+        }
+
+        world.Unlock();
+    }
+
     public void Run(SpanAction_CC<C1, C2> action)
     {
         world.Lock();
@@ -111,7 +126,7 @@ public class Query<C1, C2>(World world, Mask mask, List<Table> tables) : Query(w
         world.Unlock();
     }
 
-    public void Job<U>(RefAction_CCU<C1, C2, U> action, U uniform, int chunkSize = int.MaxValue)
+    public void Job<U>(RefAction_CCU<C1, C2, U> action, in U uniform, int chunkSize = int.MaxValue)
     {
         world.Lock();
         _countdown.Reset();
